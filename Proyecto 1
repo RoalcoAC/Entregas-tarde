@@ -14,3 +14,57 @@ train_set = datos[:train_size]
 test_set = datos[train_size:]
 # Cargar los datos desde un archivo
 datos = np.load("proyecto_training_data.npy")
+# Crear un DataFrame con los datos
+df = pd.DataFrame(datos, columns=['Y', 'X2', 'X3', 'X4', 'X5', 'X6'])
+
+# Calcular la media para cada variable
+media = df.mean()
+
+# Calcular el valor máximo para cada variable
+maximo = df.max()
+
+# Calcular el valor mínimo para cada variable
+minimo = df.min()
+
+# Calcular el rango para cada variable
+rango = maximo - minimo
+
+# Calcular la desviación estándar para cada variable
+std = df.std()
+
+# Imprimir los resultados
+print("Media:")
+print(media)
+print("\nValor máximo:")
+print(maximo)
+print("\nValor mínimo:")
+print(minimo)
+print("\nRango:")
+print(rango)
+print("\nDesviación estándar:")
+print(std)
+# Graficar un histograma de cada variable
+for col in df.columns:
+    sns.distplot(df[col], kde=False)
+    plt.title(f"Histograma de {col}")
+    plt.xlabel(col)
+    plt.ylabel("Frecuencia")
+    plt.show()
+# Calcular la matriz de correlación entre todas las variables
+corr_matrix = df.corr()
+
+# Imprimir la matriz de correlación
+print("Matriz de correlación:")
+print(corr_matrix)
+
+# Graficar x vs y (scatterplot) y colocar el coeficiente de correlación en el título
+for col in df.columns[:-1]:
+    plt.scatter(df[col], df['Y'])
+    plt.title(f"{col} vs Y (coef. de corr. = {corr_matrix.loc[col, 'Y']:.2f})")
+    plt.xlabel(col)
+    plt.ylabel("Y")
+    plt.show()
+
+# Seleccionar las 2 variables con mayor correlación con Y
+max_corr = corr_matrix.iloc[:-1, -1].abs().nlargest(2)
+print(f"\nLas 2 variables con mayor correlación con Y son:\n{max_corr}")
