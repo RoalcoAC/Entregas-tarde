@@ -1,0 +1,16 @@
+import numpy as np
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+
+# Cargar los datos desde un archivo
+datos = np.load("proyecto_training_data.npy")
+
+# Dividir los datos en conjuntos de entrenamiento y pruebas
+np.random.shuffle(datos)
+train_size = int(0.8 * len(datos))
+train_set = datos[:train_size]
+test_set = datos[train_size:]
+# Cargar los datos desde un archivo
+datos = np.load("proyecto_training_data.npy")
