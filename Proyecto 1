@@ -96,3 +96,21 @@ plt.xlabel('X3')
 plt.ylabel('Y')
 plt.show()
 print (betas)
+epochs= 100
+learning_rate= 0.0001
+x2 = df['X2'].values.reshape(-1, 1)
+unos_1 = np.ones_like(x2)
+vector_1 = np.hstack((x2, unos_1))
+y = df['Y'].values.reshape(-1, 1)
+b1 = 0.2
+b0 = 0.5
+betas= np.array([b1,b0]).reshape(-1,1)
+
+for iter in range(epochs):
+    y_pred = np.dot(vector_1,betas)
+    error = np.mean(np.power(y-y_pred,1/2))    
+    delta_b0 = np.mean(y_pred-y)
+    delta_b1 = np.mean((y_pred-y)*x2)
+    b1= betas[1] - learning_rate * delta_b1
+    b0= betas[0] - learning_rate * delta_b0
+    betas= np.array([b1,b0]).reshape(-1,1)
