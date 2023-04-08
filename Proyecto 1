@@ -12,10 +12,9 @@ np.random.shuffle(datos)
 train_size = int(0.8 * len(datos))
 train_set = datos[:train_size]
 test_set = datos[train_size:]
-# Cargar los datos desde un archivo
-datos = np.load("proyecto_training_data.npy")
 # Crear un DataFrame con los datos
-df = pd.DataFrame(datos, columns=['Y', 'X2', 'X3', 'X4', 'X5', 'X6'])
+df = pd.DataFrame(train_set, columns=['Y', 'X2', 'X3', 'X4', 'X5', 'X6'])
+df_test =  pd.DataFrame(test_set, columns=['Y', 'X2', 'X3', 'X4', 'X5', 'X6'])
 
 # Calcular la media para cada variable
 media = df.mean()
@@ -68,21 +67,18 @@ for col in df.columns[:-1]:
 # Seleccionar las 2 variables con mayor correlación con Y
 max_corr = corr_matrix.iloc[:-1, -1].abs().nlargest(2)
 print(f"\nLas 2 variables con mayor correlación con Y son:\n{max_corr}")
-epochs= 3000
-learning_rate= 0.0000000001
-x3 = df['X3'].values.reshape(-1, 1)
-unos_1 = np.ones_like(x3)
-vector_1 = np.hstack((x3, unos_1))
-y = df['Y'].values.reshape(-1, 1)
-b1 = 0.2
-b0 = 0.5
-betas= np.array([b1,b0]).reshape(-1,1)
-epochs= 100
+
+from sklearn.linear_model import LinearRegression
+epochs= 200
 learning_rate= 0.001
-x2 = df['X2'].values.reshape(-1, 1)
-unos_1 = np.ones_like(x2)
-vector_1 = np.hstack((x2, unos_1))
-y = df['Y'].values.reshape(-1, 1)
+
+# Obtener las variables predictoras X y la variable objetivo Y para el conjunto de entrenamiento
+x2_train = train_set[:, 1].reshape(-1, 1)
+unos_1 = np.ones_like(x2_train)
+vector_1 = np.hstack((x2_train, unos_1))
+y_train = train_set[:, 0].reshape(-1, 1)
+
+# Inicializar los coeficientes de la regresión lineal
 b1 = 0.2
 b0 = 0.5
 betas= np.array([b1,b0]).reshape(-1,1)
@@ -90,32 +86,81 @@ betas= np.array([b1,b0]).reshape(-1,1)
 error_list = [] # crear una lista vacía para almacenar los errores
 
 for iter in range(epochs):
+    # Hacer predicciones usando los coeficientes actuales
     y_pred = vector_1 @ betas
-    error = np.mean((y - y_pred) ** 2)
-    error_list.append(error) # agregar el error actual a la lista de errores
+    # Calcular el error y agregarlo a la lista de errores
+    error = np.mean((y_train - y_pred) ** 2)
+    error_list.append(error)
+    # Imprimir el error cada 10 épocas
     if (iter + 1) % 10 == 0:
         print(f"Epoch {iter+1}/{epochs} - error: {error}")
-    delta_b0 = np.mean(y_pred - y)
-    delta_b1 = np.mean((y_pred - y) * x2)
+    # Actualizar los coeficientes usando el descenso del gradiente
+    delta_b0 = np.mean(y_pred - y_train)
+    delta_b1 = np.mean((y_pred - y_train) * x2_train)
     b1 = betas[1] - learning_rate * delta_b1
     b0 = betas[0] - learning_rate * delta_b0
     betas = np.array([b1,b0]).reshape(-1,1)
-# Generamos predicciones para nuestro conjunto de datos
-y_pred = np.dot(vector_1, betas)
 
-# Graficamos los datos y la línea de regresión resultante
-plt.scatter(x2, y)
-plt.plot(x2, y_pred, color='red')
+# Generar predicciones para nuestro conjunto de datos de entrenamiento
+y_pred_train = np.dot(vector_1, betas)
+
+# Graficar los datos y la línea de regresión resultante para el conjunto de entrenamiento
+plt.scatter(x2_train, y_train)
+plt.plot(x2_train, y_pred_train, color='red')
 plt.xlabel('X2')
 plt.ylabel('Y')
+plt.title('Regresión lineal para el conjunto de entrenamiento')
 plt.show()
-print (betas)
 
+# Graficar el error en función de las épocas
 plt.plot(error_list)
 plt.xlabel('Epochs')
 plt.ylabel('Error')
 plt.title('Error vs. Epochs')
 plt.show()
+
+
+# Imprimir los coeficientes de la regresión lineal resultante
+print("Coeficientes de la regresión lineal:")
+print(betas)
+print("Variable objetivo y en el conjunto de entrenamiento:")
+print(y_pred_train)
+
+# Crear un objeto de regresión lineal
+reg = LinearRegression()
+
+# Entrenar el modelo con los datos de entrenamiento
+reg.fit(x2_train, y_train)
+
+# Obtener las predicciones para los datos de prueba
+y_pred = reg.predict(x2_train)
+
+# Imprimir las predicciones
+print("Variable objetivo y en el conjunto de entrenamiento de Scikit-Learn:")
+print(y_pred)
+
+# Obtener las predicciones para los datos de prueba
+y_pred1 = reg.predict(x2_train)
+y_pred2 = np.dot(vector_1_test, betas)
+y_pred2_resized = np.resize(y_pred2, y_pred1.shape)
+y_pred_avg = (y_pred1 + y_pred2_resized) / 2
+
+# Imprimir las predicciones promedio
+print("Variable objetivo y promedio:")
+print(y_pred_avg)
+Yreg= betas[0]*df_test["X2"]+betas[1]
+print(Yreg)
+error = np.mean((y_test[-1] - Yreg) ** 2)
+print("Error ", error)
+# Obtener las predicciones para los datos de prueba utilizando Scikit-learn
+X2 = df_test['X2'].values.reshape(-1, 1)
+y_pred_sci = reg.predict(X2)
+
+# Calcular el error utilizando la métrica MSE
+error_sci = mean_squared_error(y_test, y_pred_sci)
+
+# Imprimir el error
+print("Error de Scikit-learn:", error_sci)
 epochs= 3000
 learning_rate= 0.000000001
 x3 = df['X3'].values.reshape(-1, 1)
@@ -153,8 +198,49 @@ plt.xlabel('Epochs')
 plt.ylabel('Error')
 plt.title('Error vs. Epochs')
 plt.show()
-epochs= 18000
-learning_rate= 0.000001
+# Imprimir los coeficientes de la regresión lineal resultante
+print("Coeficientes de la regresión lineal:")
+print(betas)
+print("Variable objetivo y en el conjunto de entrenamiento:")
+print(y_pred)
+
+# Crear un objeto de regresión lineal
+reg = LinearRegression()
+
+# Entrenar el modelo con los datos de entrenamiento
+reg.fit(x3, y_train)
+
+# Obtener las predicciones para los datos de prueba
+y_pred_sci = reg.predict(x3)
+
+# Imprimir las predicciones
+print("Variable objetivo y en el conjunto de entrenamiento de Scikit-Learn:")
+print(y_pred_sci)
+
+# Obtener las predicciones para los datos de prueba
+y_pred1 = reg.predict(x3)
+y_pred2 = np.dot(vector_1_test, betas)
+y_pred2_resized = np.resize(y_pred2, y_pred1.shape)
+y_pred_avg = (y_pred1 + y_pred2_resized) / 2
+
+# Imprimir las predicciones promedio
+print("Variable objetivo y promedio:")
+print(y_pred_avg)
+Yreg= betas[0]*df_test["X2"]+betas[1]
+print(Yreg)
+error = np.mean((y_test[-1] - Yreg) ** 2)
+print("Error ", error)
+# Obtener las predicciones para los datos de prueba utilizando Scikit-learn
+X3 = df_test['X3'].values.reshape(-1, 1)
+y_pred_sci = reg.predict(X3)
+
+# Calcular el error utilizando la métrica MSE
+error_sci = mean_squared_error(y_test, y_pred_sci)
+
+# Imprimir el error
+print("Error de Scikit-learn:", error_sci)
+epochs= 15000
+learning_rate= 0.00001
 x4 = df['X4'].values.reshape(-1, 1)
 unos_1 = np.ones_like(x4)
 vector_1 = np.hstack((x4, unos_1))
@@ -191,38 +277,49 @@ plt.xlabel('Epochs')
 plt.ylabel('Error')
 plt.title('Error vs. Epochs')
 plt.show()
-epochs= 1750
-learning_rate= 0.000000001
-x5 = df['X5'].values.reshape(-1, 1)
-unos_1 = np.ones_like(x5)
-vector_1 = np.hstack((x5, unos_1))
-y = df['Y'].values.reshape(-1, 1)
-b1 = 0.2
-b0 = 0.5
-betas= np.array([b1,b0]).reshape(-1,1)
 
-error_list_3 = [] # crear una lista vacía para almacenar los errores
 
-for iter in range(epochs):
-    y_pred = vector_1 @ betas
-    error = np.mean((y - y_pred) ** 2)
-    error_list_3.append(error) # agregar el error actual a la lista de errores
-    if (iter + 1) % 10 == 0:
-        print(f"Epoch {iter+1}/{epochs} - error: {error}")
-    delta_b0 = np.mean(y_pred - y)
-    delta_b1 = np.mean((y_pred - y) * x5)
-    b1 = betas[1] - learning_rate * delta_b1
-    b0 = betas[0] - learning_rate * delta_b0
-    betas = np.array([b1,b0]).reshape(-1,1)
-# Graficamos los datos y la línea de regresión resultante
-plt.scatter(x5, y)
-plt.plot(x5, y_pred, color='red')
-plt.xlabel('X5')
-plt.ylabel('Y')
-plt.show()
-print (betas)
-plt.plot(error_list_3)
-plt.xlabel('Epochs')
-plt.ylabel('Error')
-plt.title('Error vs. Epochs')
-plt.show()
+# Imprimir los coeficientes de la regresión lineal resultante
+print("Coeficientes de la regresión lineal:")
+print(betas)
+print("Variable objetivo y en el conjunto de entrenamiento:")
+print(y_pred)
+
+# Crear un objeto de regresión lineal
+reg = LinearRegression()
+
+# Entrenar el modelo con los datos de entrenamiento
+reg.fit(x4, y_pred)
+
+# Obtener las predicciones para los datos de prueba
+y_pred_sci = reg.predict(x4)
+
+# Imprimir las predicciones
+print("Variable objetivo y en el conjunto de entrenamiento de Scikit-Learn:")
+print(y_pred_sci)
+
+# Obtener las predicciones para los datos de prueba
+y_pred1 = reg.predict(x4_train)
+y_pred2 = np.dot(vector_1_test, betas)
+y_pred2_resized = np.resize(y_pred2, y_pred1.shape)
+y_pred_avg = (y_pred1 + y_pred2_resized) / 2
+
+# Imprimir las predicciones promedio
+print("Variable objetivo y promedio:")
+print(y_pred_avg)
+
+Yreg= betas[0]*df_test["X2"]+betas[1]
+print(Yreg)
+error = np.mean((y_test[-1] - Yreg) ** 2)
+print("Error ", error)
+# Obtener las predicciones para los datos de prueba utilizando Scikit-learn
+X4 = df_test['X4'].values.reshape(-1, 1)
+y_pred_sci = reg.predict(X4)
+
+# Calcular el error utilizando la métrica MSE
+error_sci = mean_squared_error(y_test, y_pred_sci)
+
+# Imprimir el error
+print("Error de Scikit-learn:", error_sci)
+
+
